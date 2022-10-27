@@ -8,13 +8,31 @@ import mediapipe as mp
 from model import KeyPointClassifier
 
 
-def calc_landmark_list(image, landmarks):
+noseTip= [1]
+noseBottom= [2]
+noseRightCorner= [98]
+noseLeftCorner= [327]
+
+rightCheek= [205]
+leftCheek= [425]
+
+silhouette= [
+10,  338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
+397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
+172, 58,  132, 93,  234, 127, 162, 21,  54,  103, 67,  109
+]
+
+ROI =  silhouette + noseTip + noseBottom + noseRightCorner + noseLeftCorner + rightCheek + leftCheek
+
+def calc_landmark_list(image, landmarks,ROI):
     image_width, image_height = image.shape[1], image.shape[0]
 
     landmark_point = []
 
     # Keypoint
-    for _, landmark in enumerate(landmarks.landmark):
+    # for _, landmark in enumerate(landmarks.landmark):
+    for i in ROI:
+        landmark = landmarks.landmark[i]
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
         landmark_y = min(int(landmark.y * image_height), image_height - 1)
 
@@ -116,6 +134,10 @@ with open('model/keypoint_classifier/keypoint_classifier_label.csv',
         row[0] for row in keypoint_classifier_labels
     ]
 
+# for idx, i in enumerate(keypoint_classifier_labels):
+#     print(idx,i)
+# print(keypoint_classifier_labels)
+# print('length is ',len(keypoint_classifier_labels))
 mode = 0
 
 while True:
@@ -145,14 +167,17 @@ while True:
             brect = calc_bounding_rect(debug_image, face_landmarks)
 
             # Landmark calculation
-            landmark_list = calc_landmark_list(debug_image, face_landmarks)
+            landmark_list = calc_landmark_list(debug_image, face_landmarks,ROI)
 
             # Conversion to relative coordinates / normalized coordinates
             pre_processed_landmark_list = pre_process_landmark(
                 landmark_list)
-
+            # print(pre_processed_landmark_list)
             #emotion classification
-            facial_emotion_id = keypoint_classifier(pre_processed_landmark_list)
+            facial_emotion_id = keypoint_classifier(pre_processed_landmark_list) 
+            if cv.waitKey(5) & 0xFF == ord('s'):
+                print(facial_emotion_id)
+            # print(type(facial_emotion_id))
             # Drawing part
             debug_image = draw_bounding_rect(use_brect, debug_image, brect)
             debug_image = draw_info_text(
